@@ -1,6 +1,8 @@
 # Proyectos ESCI 2026
 Proyectos hecho por alumnos del ITU de la carrera de electricidad y sistema de control, este documento esta hecho en colaboración de los alumnos: Maya, Lombino,Rando,Ferrara,Estrella,Diaz.
 
+*Profesores a cargo: Ing. Diego Logotteti - Dra. Diana Yelos*
+
 ## 📋 Índice
 1. [🌞 Eficiencia de un Panel Solar](./Eficiencia%20de%20un%20Panel%20Solar(Monitoreo%20de%20Voltaje)/)
 2. [📡 Proyecto LoRa](./Proyecto%20LoRa/)
