@@ -1,0 +1,105 @@
+#include <SPI.h>
+// Librería SPI estándar para el bus de la ESP32
+#include <LoRa.h>
+// Librería estándar para módulos LoRa (SX1278)
+#include <Wire.h> 
+// Librería para el bus I2C de la ESP32
+#include <LiquidCrystal_I2C.h>
+// Librería para controlar la pantalla LCD por I2C
+
+// --- CONFIGURACIÓN DE PINES Ra-02 PARA ESP32 ---
+// Pines SPI fijos por Hardware en ESP32:
+// SCK  -> GPIO 18
+// MISO -> GPIO 19
+// MOSI -> GPIO 23
+const int csPin = 5;       // NSS conectado al GPIO 5
+const int resetPin = 14;   // RST conectado al GPIO 14
+const int irqPin = 26;     // DIO0 conectado al GPIO 26 (Totalmente libre de conflictos)
+
+// --- Configuración LCD 20x4 ---
+// Mantenemos las dos direcciones posibles. Si con 0x27 no muestra, probá con 0x3F.
+LiquidCrystal_I2C lcd(0x27, 20, 4); 
+
+void setup() {
+  Serial.begin(115200);   
+  delay(1000);
+  Serial.println("\n--- INICIALIZANDO NODO RECEPTOR ESP32 ---");
+  
+  // 1. Inicializar Pantalla LCD en los pines I2C nativos de la ESP32 (SDA=GPIO 21 / SCL=GPIO 22)
+  Wire.begin(21, 22); 
+  lcd.init();
+  lcd.backlight();
+  
+  // Pantalla de Bienvenida para el ITU
+  lcd.setCursor(0, 0);
+  lcd.print("   TELEMETRIA LoRa   ");
+  lcd.setCursor(0, 1);
+  lcd.print("   PROYECTO  SIST.  ");
+  lcd.setCursor(0, 2);
+  lcd.print("   ITU - MENDOZA    ");
+  delay(2500);
+
+  // 2. Configurar pines de control para el módulo LoRa
+  LoRa.setPins(csPin, resetPin, irqPin);
+
+  // 3. Iniciar el módulo LoRa en 433MHz
+  if (!LoRa.begin(433E6)) { 
+    Serial.println("ERROR: Hardware LoRa no encontrado en pines SPI.");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("ERROR: SIN MODULO");
+    lcd.setCursor(0, 1);
+    lcd.print("REVISAR PINES SPI");
+    while (1) delay(10); 
+  }
+
+  // --- SINCRONIZACIÓN CRÍTICA ---
+  // Debe coincidir exactamente con el Emisor (0xF3)
+  LoRa.setSyncWord(0xF3);
+  
+  lcd.clear();
+  // Estructura fija en el LCD para evitar parpadeos molestos
+  lcd.setCursor(0, 0);
+  lcd.print("--- MODO ESCUCHA ---");
+  lcd.setCursor(0, 1);
+  lcd.print("DATOS:");
+  lcd.setCursor(0, 3);
+  lcd.print("SENAL:");
+  
+  Serial.println("¡Receptor listo! Esperando paquetes en el aire...");
+}
+
+void loop() {
+  int packetSize = LoRa.parsePacket();  // Verifica si hay señal entrante
+  
+  if (packetSize) {
+    String incoming = "";
+    while (LoRa.available()) {
+      incoming += (char)LoRa.read();    // Reconstruye el mensaje del emisor
+    }
+
+    // Mostrar también por el Monitor Serie de la compu por si las dudas
+    Serial.print("Recibido -> ");
+    Serial.print(incoming);
+    Serial.print(" | RSSI: ");
+    Serial.println(LoRa.packetRssi());
+
+    // Actualizar datos de telemetría en el LCD
+    lcd.setCursor(7, 1);
+    lcd.print("             ");         // Limpieza selectiva
+    lcd.setCursor(7, 1);
+    lcd.print(incoming);                // Muestra "25.4C  60.1%"
+
+    // Actualizar nivel de señal
+    lcd.setCursor(7, 3);
+    lcd.print(LoRa.packetRssi());
+    lcd.print(" dBm    ");
+
+    // Testigo visual de recepción (Pestañea un asterisco arriba a la derecha)
+    lcd.setCursor(19, 0);
+    lcd.print("*");
+    delay(150);
+    lcd.setCursor(19, 0);
+    lcd.print(" ");
+  }
+}

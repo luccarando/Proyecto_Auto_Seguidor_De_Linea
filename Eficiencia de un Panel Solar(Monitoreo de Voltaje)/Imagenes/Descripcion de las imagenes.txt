@@ -1,0 +1,11 @@
+Imagen 1 (Google Form): > Interfaz de Recepción: Configuración del formulario de Google Forms utilizado como pasarela para la entrada de datos desde el microcontrolador.
+
+Imagen 2 (Planilla de Cálculo): > Base de Datos en la Nube: Registro histórico en Google Sheets donde se almacenan las marcas de tiempo y los valores de voltaje capturados en tiempo real.
+
+Imagen 3 (Gráfico Colab): > Visualización de Datos: Gráfico de evolución temporal generado en Python, mostrando las fluctuaciones del voltaje real del panel solar.
+
+Imagen 4 (Código Arduino): > Firmware y Telemetría: Código fuente en C++ para el ESP32 y monitor serie verificando la correcta conexión a la red y el envío de paquetes de datos (HTTP 200).
+
+Imagen 5 (Código Python): > Algoritmo de Análisis: Script de procesamiento de datos en Google Colab encargado de la vinculación dinámica con la base de datos y el renderizado estadístico.
+
+Imagen 6 (Hardware Real): > Prototipo y Banco de Pruebas: Montaje físico del sistema que integra el panel solar fotovoltaico, el divisor de tensión y el nodo sensor ESP32.

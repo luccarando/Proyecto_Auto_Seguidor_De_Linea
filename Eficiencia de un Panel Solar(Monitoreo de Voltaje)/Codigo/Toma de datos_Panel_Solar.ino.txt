@@ -1,0 +1,110 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// 1. DATOS DE TU WI-FI
+const char* ssid     = "MENDOZA WIFI";
+const char* password = "conectaMZA";
+
+// 2. CREDENCIALES REALES DE TU GOOGLE FORMS (ID corregido sin el /e/)
+const char* FORM_ID = "1j4v_-t4E1J8Hj0Az1gz2kwaQUScReNQDcijFqKAGMXE";
+const char* ENTRY_TIMESTAMP = "entry.1561511206"; // ID de la pregunta Timestamp
+const char* ENTRY_VOLTAJE   = "entry.1245200006"; // ID de la pregunta Voltaje_Panel
+
+// 3. HARDWARE (¡Devuelto al PIN 32 original para el ESP32 normal!)
+const int adcPin = 32; 
+const float R1 = 270000.0;
+const float R2 = 47000.0;
+const float factor_divisor = (R1 + R2) / R2; // Factor de escala ~6.74
+
+unsigned long ultimaMuestra = 0;
+const unsigned long intervaloMuestra = 120000; // Toma de muestra cada 2 minutos
+
+// Función de la profesora para promediar lecturas y filtrar ruido
+int readAdcAverage(int pin, int samples) {
+  long sum = 0;
+  for (int i = 0; i < samples; i++) {
+    sum += analogRead(pin);
+    delay(10);
+  }
+  return sum / samples;
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Configuración del ADC a 12 bits (0-4095) y atenuación de 11dB (hasta 3.3V)
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db); 
+
+  // Proceso de conexión a la red Wi-Fi
+  Serial.print("Conectando a ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n¡Wi-Fi Conectado exitosamente!");
+}
+
+void loop() {
+  unsigned long tiempoActual = millis();
+
+  // Control de tiempo no bloqueante con millis()
+  if (tiempoActual - ultimaMuestra >= intervaloMuestra) {
+    ultimaMuestra = tiempoActual;
+
+    // 1. Leer el ADC crudo promediando 20 muestras
+    int avg_adc = readAdcAverage(adcPin, 20);
+
+    // 2. Aplicar la calibración polinómica de la profesora para corregir el ADC
+    float bondagePinCalibrado = (-2.447e-8) * avg_adc * avg_adc + 0.0008722 * avg_adc + 0.09237;
+    if (bondagePinCalibrado < 0) bondagePinCalibrado = 0; 
+
+    // 3. Aplicar el factor del divisor resistivo para obtener el voltaje real del panel
+    float voltajeRealPanel = bondagePinCalibrado * factor_divisor;
+
+    // 4. Generar el reloj interno simulado (HH:MM:SS) para el eje X de tu gráfico
+    unsigned long segundosTotales = tiempoActual / 1000;
+    int horas = (segundosTotales / 3600) % 24;
+    int minutos = (segundosTotales / 60) % 60;
+    int segundos = segundosTotales % 60;
+
+    char timestamp[9];
+    sprintf(timestamp, "%02d:%02d:%02d", horas, minutos, segundos);
+
+    // Muestra local en el Monitor Serie para control visual
+    Serial.print("[" + String(timestamp) + "] ADC: " + String(avg_adc));
+    Serial.print(" -> V_Pin_Calibrado: " + String(bondagePinCalibrado, 3) + "V");
+    Serial.println(" -> V_Panel_Real: " + String(voltajeRealPanel, 2) + "V");
+
+    // 5. Envío de datos a la nube (Google Forms / Sheets)
+    if (WiFi.status() == WL_CONNECTED) {
+      HTTPClient http;
+      
+      // Dirección url formateada correctamente para cuentas institucionales
+      String url = "https://docs.google.com/forms/d/" + String(FORM_ID) + "/formResponse";
+      
+      http.begin(url);
+      http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+      // Armamos la cadena POST con los IDs de tus variables correspondientes
+      String datosPost = String(ENTRY_TIMESTAMP) + "=" + String(timestamp) + "&" +
+                         String(ENTRY_VOLTAJE)   + "=" + String(voltajeRealPanel, 2);
+
+      int httpResponseCode = http.POST(datosPost);
+      
+      if (httpResponseCode > 0) {
+        Serial.print("¡Dato enviado a la nube! Código de respuesta: ");
+        Serial.println(httpResponseCode); // El código 200 significa éxito total
+      } else {
+        Serial.print("Error en el envío HTTP: ");
+        Serial.println(httpResponseCode);
+      }
+      http.end();
+    } else {
+      Serial.println("Error: Conexión Wi-Fi perdida. Reteniendo el paquete.");
+    }
+  }
+}
