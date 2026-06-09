@@ -1,5 +1,5 @@
 # Proyectos ESCI 2026
-Proyectos hecho por alumnos del ITU de la carrera de electricidad y sistema de control industrial, este documento esta hecho en colaboración de los alumnos: Maya, Lombino,Rando,Ferrara,Estrella,Diaz.
+Proyectos hecho por alumnos del ITU de la carrera de electricidad y sistema de control industrial, este documento esta hecho en colaboración de los alumnos: Maya, Lombino,Rando,Ferrara,Estrella, Mauro Diaz.
 
 *Profesores a cargo: Ing. Diego Logotetti - Dra. Diana Yelos*
 
