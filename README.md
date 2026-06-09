@@ -12,3 +12,4 @@ Proyectos hecho por alumnos del ITU de la carrera de electricidad y sistema de c
 2. [📡 Proyecto LoRa](./Proyecto%20LoRa/)
 3. [🚙 Seguidores de Linea](./Vehículo%20seguidor%20de%20linea/)
 4. [💧 Monitoreo y Riego automatizado por WiFi](./Monitoreo%20y%20riego%20automatizado%20por%20wifi/)
+5. [🔵ᛒ Comunicación Bluetooh](./Comunicación%20Bluetooth%20/%20Informe/)  
